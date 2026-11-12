@@ -1,0 +1,38 @@
+name: Bug report
+description: Something triton-cachekit does wrong (wrong parse, wrong explanation, crash)
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: The command you ran, what you expected and what you got. Paste output as text.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: triton-cachekit version
+      placeholder: "triton-cachekit --version"
+    validations:
+      required: true
+  - type: input
+    id: triton
+    attributes:
+      label: Triton version and how it was installed
+      placeholder: "3.9.0 from PyPI, Python 3.13"
+  - type: textarea
+    id: data
+    attributes:
+      label: Data to reproduce
+      description: >
+        For inspect problems: the entry's .json and __grp__*.json files and a directory listing.
+        For explain problems: both recordings (they contain paths, TRITON_* variables and,
+        unless recorded with --no-source, kernel source: review them first).
+  - type: dropdown
+    id: gpu
+    attributes:
+      label: Was a real GPU involved?
+      options: ["No (CPU only / fake driver)", "Yes, NVIDIA", "Yes, AMD"]
+    validations:
+      required: true

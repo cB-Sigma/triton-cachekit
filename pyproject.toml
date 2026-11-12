@@ -1,0 +1,107 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "triton-cachekit"
+dynamic = ["version"]
+description = "Inspect, explain, prewarm and ship Triton (triton-lang) kernel compilation caches."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "The triton-cachekit Authors" }]
+keywords = ["triton", "gpu", "jit", "compilation-cache", "cold-start", "vllm", "pytorch", "inference"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Compilers",
+    "Topic :: System :: Archiving :: Packaging",
+    "Typing :: Typed",
+]
+# The core tool is standard-library only. Triton itself is needed only for
+# the commands that have to run Triton (record, prewarm, verify-hit, --demo).
+dependencies = []
+
+[project.optional-dependencies]
+triton = ["triton>=3.8,<3.10"]
+dev = [
+    "build>=1.2",
+    "mypy>=1.11",
+    "pytest>=8",
+    "ruff>=0.6",
+    "twine>=5",
+]
+
+[project.urls]
+Homepage = "https://github.com/cb-Sigma/triton-cachekit"
+Repository = "https://github.com/cb-Sigma/triton-cachekit"
+Issues = "https://github.com/cb-Sigma/triton-cachekit/issues"
+Changelog = "https://github.com/cb-Sigma/triton-cachekit/blob/main/CHANGELOG.md"
+
+[project.scripts]
+triton-cachekit = "triton_cachekit.cli:main"
+
+[tool.hatch.version]
+path = "src/triton_cachekit/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/triton_cachekit"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests",
+    "/docs",
+    "/examples",
+    "/scripts",
+    "/README.md",
+    "/CHANGELOG.md",
+    "/CONTRIBUTING.md",
+    "/CODE_OF_CONDUCT.md",
+    "/SECURITY.md",
+    "/LICENSE",
+]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "triton: integration tests that need a working Triton install (skipped when it is absent)",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "C4", "PIE", "RET", "RUF"]
+ignore = [
+    "E501",   # line length is the formatter's job; long messages stay on one line
+    "SIM108", # ternaries are not always clearer
+    "RET505",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"examples/*" = ["E731"]
+
+[tool.mypy]
+python_version = "3.11"
+files = ["src/triton_cachekit"]
+strict = true
+warn_unreachable = true
+# Triton ships no type information and is an optional dependency.
+[[tool.mypy.overrides]]
+module = ["triton", "triton.*", "torch", "torch.*"]
+ignore_missing_imports = true
+follow_imports = "skip"

@@ -1,0 +1,41 @@
+name: verify-hit result from a real GPU
+description: Report whether a cache built by `prewarm` was hit on real hardware (hit or miss, both are useful)
+labels: [verify-hit]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        Thank you. Whether prewarmed caches are hit on real GPUs is the main unverified claim of
+        this project; every report narrows it down.
+  - type: dropdown
+    id: outcome
+    attributes:
+      label: Outcome
+      options: ["All hit", "Some missed", "All missed", "Could not run"]
+    validations:
+      required: true
+  - type: input
+    id: gpu
+    attributes:
+      label: GPU and target
+      placeholder: "A100, cuda:80  /  MI300X, hip:gfx942:64"
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Triton, Python and triton-cachekit versions (build machine and GPU host)
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output of `triton-cachekit verify-hit ...`
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
+      description: How the cache was built and shipped, container image, environment variables.

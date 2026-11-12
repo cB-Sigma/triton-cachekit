@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint and type-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: python -m pip install -e '.[dev]'
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: mypy
+
+  unit:
+    name: Unit tests (Python ${{ matrix.python }}, no Triton)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - run: python -m pip install -e '.[dev]'
+      # Triton is not installed here: tests marked "triton" are skipped, everything else must pass.
+      - run: pytest
+
+  integration:
+    name: Integration tests (Triton ${{ matrix.triton }}, CPU only)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        triton: ["3.8.0", "3.9.0"]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: python -m pip install -e '.[dev]'
+      # The Triton wheel bundles its compilers (LLVM, ptxas, the AMD code generator); kernels are
+      # compiled for GPU targets through a stand-in driver, so the hosted CPU runner is enough.
+      - run: python -m pip install "triton==${{ matrix.triton }}"
+      - run: pytest -m triton
+      - name: README output blocks are current
+        if: matrix.triton == '3.9.0'
+        run: python scripts/update_readme.py --check
+
+  package:
+    name: Build and install the wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - run: python -m pip install build twine
+      - run: python -m build
+      - run: twine check --strict dist/*
+      - name: Install the wheel into a clean environment (no Triton)
+        run: |
+          python -m venv /tmp/clean
+          /tmp/clean/bin/pip install dist/*.whl
+          /tmp/clean/bin/triton-cachekit --version
+          mkdir -p /tmp/empty-cache
+          /tmp/clean/bin/triton-cachekit inspect /tmp/empty-cache
+          /tmp/clean/bin/python -c "import sys, triton_cachekit.cli; assert 'triton' not in sys.modules"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/

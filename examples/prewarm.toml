@@ -1,0 +1,34 @@
+# Prewarm manifest for examples/kernels.py.
+#
+#   triton-cachekit prewarm --manifest examples/prewarm.toml --cache-dir ./cache
+#
+# Each [[kernel.spec]] is one call of the kernel as the application makes it:
+#   "tensor:<dtype>"            a tensor argument (pointer aligned to 16 bytes)
+#   "tensor:<dtype>:unaligned"  the same, for views whose data pointer is not
+#   numbers / booleans          passed as they are; Triton specialises on integers
+#                               being 1 or divisible by 16, so use realistic values
+#   kwargs                      constexpr arguments and compile options (num_warps ...)
+
+[prewarm]
+target = "cuda:80"                      # compute capability 8.0 (A100); warp size defaults to 32
+env = { TRITON_DEFAULT_FP_FUSION = "0" }   # must equal what the server exports
+
+[[kernel]]
+file = "kernels.py"                     # relative to this manifest; or: module = "pkg.kernels"
+name = "rms_norm_rows"
+
+  [[kernel.spec]]                       # fp16 activations, hidden size 4096
+  args = ["tensor:float16", "tensor:float16", "tensor:float16", 4096]
+  kwargs = { BLOCK = 4096 }
+
+  [[kernel.spec]]                       # bf16 activations, hidden size 1024
+  args = ["tensor:bfloat16", "tensor:bfloat16", "tensor:bfloat16", 1024]
+  kwargs = { BLOCK = 1024 }
+
+[[kernel]]
+file = "kernels.py"
+name = "silu"
+
+  [[kernel.spec]]
+  args = ["tensor:float16", "tensor:float16", 65536]
+  kwargs = { BLOCK = 1024, num_warps = 8 }

@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Triton itself (compiler bugs, cache-key behaviour)
+    url: https://github.com/triton-lang/triton/issues
+    about: triton-cachekit is an independent tool; problems in Triton belong upstream.
